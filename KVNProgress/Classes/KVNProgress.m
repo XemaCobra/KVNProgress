@@ -42,7 +42,6 @@ static CGFloat const KVNInfiniteLoopAnimationDuration = 1.0f;
 static CGFloat const KVNProgressAnimationDuration = 0.25f;
 static CGFloat const KVNProgressIndeterminate = CGFLOAT_MAX;
 static CGFloat const KVNCircleProgressViewToStatusLabelVerticalSpaceConstraintConstant = 20.0f;
-static CGFloat const KVNContentViewFullScreenModeLeadingAndTrailingSpaceConstraintConstant = 0.0f;
 static CGFloat const KVNContentViewNotFullScreenModeLeadingAndTrailingSpaceConstraintConstant = 25.0f;
 static CGFloat const KVNContentViewWithStatusInset = 10.0f;
 static CGFloat const KVNContentViewWithoutStatusInset = 20.0f;
@@ -56,12 +55,11 @@ static KVNProgressConfiguration *configuration;
 @interface KVNProgress ()
 
 @property (nonatomic) CGFloat progress;
-@property (nonatomic) KVNProgressBackgroundType backgroundType;
 @property (nonatomic) NSString *status;
 @property (nonatomic) KVNProgressStyle style;
 @property (nonatomic) KVNProgressConfiguration *configuration;
 @property (nonatomic) NSDate *showActionTrigerredDate;
-@property (nonatomic, getter = isFullScreen) BOOL fullScreen;
+@property (nonatomic, getter = isCircular) BOOL circular;
 @property (nonatomic, getter = isWaitingToChangeHUD) BOOL waitingToChangeHUD;
 @property (nonatomic) KVNProgressState state;
 
@@ -325,8 +323,7 @@ static KVNProgressConfiguration *configuration;
 	[[self sharedView] showProgress:progress
 							 status:status
 							  style:style
-					 backgroundType:configuration.backgroundType
-						 fullScreen:configuration.fullScreen
+                           circular:configuration.circular
 							   view:superview
 						 completion:completion];
 }
@@ -334,8 +331,7 @@ static KVNProgressConfiguration *configuration;
 - (void)showProgress:(CGFloat)progress
 			  status:(NSString *)status
 			   style:(KVNProgressStyle)style
-	  backgroundType:(KVNProgressBackgroundType)backgroundType
-		  fullScreen:(BOOL)fullScreen
+            circular:(BOOL)circular
 				view:(UIView *)superview
 		  completion:(KVNCompletionBlock)completion
 {
@@ -372,8 +368,7 @@ static KVNProgressConfiguration *configuration;
 				[KVNBlockSelf showProgress:progress
 									status:status
 									 style:style
-							backgroundType:backgroundType
-								fullScreen:fullScreen
+                                  circular:circular
 									  view:superview
 								completion:completion];
 			});
@@ -387,8 +382,7 @@ static KVNProgressConfiguration *configuration;
 	self.progress = progress;
 	self.status = [status copy];
 	self.style = style;
-	self.backgroundType = backgroundType;
-	self.fullScreen = fullScreen;
+    self.circular = circular;
 
 	// If HUD is already added to the view we just update the UI
 	if ([self.class isVisible]) {
@@ -566,24 +560,25 @@ static KVNProgressConfiguration *configuration;
 		self.transform = CGAffineTransformIdentity;
 	}
 	
-	if ([self isFullScreen]) {
-		contentWidth = CGRectGetWidth(bounds) - (2 * KVNContentViewFullScreenModeLeadingAndTrailingSpaceConstraintConstant);
-	} else {
-		if (KVNIpad) {
-			contentWidth = KVNAlertViewWidth;
-		} else {
-			contentWidth = CGRectGetWidth(bounds) - (2 * KVNContentViewNotFullScreenModeLeadingAndTrailingSpaceConstraintConstant);
-			
-			if (contentWidth > KVNAlertViewWidth) {
-				contentWidth = KVNAlertViewWidth;
-			}
-		}
-	}
-	
+    if (KVNIpad) {
+        contentWidth = KVNAlertViewWidth;
+    } else {
+        contentWidth = CGRectGetWidth(bounds) - (2 * KVNContentViewNotFullScreenModeLeadingAndTrailingSpaceConstraintConstant);
+        
+        if (contentWidth > KVNAlertViewWidth) {
+            contentWidth = KVNAlertViewWidth;
+        }
+    }
+
 	self.circleProgressViewTopToSuperViewConstraint.constant = statusInset;
 	self.statusLabelBottomToSuperViewConstraint.constant = statusInset;
 	self.contentViewWidthConstraint.constant = contentWidth;
 	
+    if ([self isCircular]) {
+        self.contentView.layer.cornerRadius = contentWidth/2;
+        self.contentView.layer.masksToBounds = YES;
+    }
+    
 	[self layoutIfNeeded];
 }
 
@@ -847,16 +842,8 @@ static KVNProgressConfiguration *configuration;
 	UIImage *backgroundImage = nil;
 	UIColor *backgroundColor = nil;
 	
-	switch (self.backgroundType) {
-		case KVNProgressBackgroundTypeSolid:
-			backgroundImage = [UIImage emptyImage];
-			backgroundColor = self.configuration.backgroundFillColor;
-			break;
-		case KVNProgressBackgroundTypeBlurred:
-			backgroundImage = [self blurredScreenShot];
-			backgroundColor = [UIColor clearColor];
-			break;
-	}
+    backgroundImage = [self blurredScreenShot];
+    backgroundColor = [UIColor clearColor];
 	
 	if (!KVNSystemVersionGreaterOrEqual_iOS_8
 		&& !CGAffineTransformEqualToTransform(self.transform, CGAffineTransformIdentity))
@@ -873,34 +860,28 @@ static KVNProgressConfiguration *configuration;
 	
 	[self updateBackgroundConstraints];
 	
-	if ([self isFullScreen])
-	{
-		self.backgroundImageView.image = backgroundImage;
-		self.backgroundImageView.backgroundColor = backgroundColor;
-		
-		self.contentView.layer.cornerRadius = 0.0f;
-		self.contentView.layer.masksToBounds = NO;
-		self.contentView.image = [UIImage emptyImage];
-		self.contentView.backgroundColor = [UIColor clearColor];
-	}
+    if ([self isCircular]) {
+        self.contentView.layer.cornerRadius = self.contentView.bounds.size.height/2;
+    }
 	else
 	{
-		self.backgroundImageView.image = [UIImage emptyImage];
-		self.backgroundImageView.backgroundColor = [UIColor colorWithWhite:0.0f
-																	 alpha:0.35f];
-		
 		self.contentView.layer.cornerRadius = (self.status) ? KVNContentViewCornerRadius : KVNContentViewWithoutStatusCornerRadius;
-		self.contentView.layer.masksToBounds = YES;
-		self.contentView.contentMode = UIViewContentModeCenter;
-		self.contentView.backgroundColor = self.configuration.backgroundFillColor;
-		
-		self.contentView.image = backgroundImage;
 	}
+    
+    self.backgroundImageView.image = [UIImage emptyImage];
+    self.backgroundImageView.backgroundColor = [UIColor colorWithWhite:0.0f alpha:0.35f];
+
+    self.contentView.layer.masksToBounds = YES;
+    self.contentView.contentMode = UIViewContentModeCenter;
+    self.contentView.backgroundColor = self.configuration.backgroundFillColor;
+    
+    self.contentView.image = backgroundImage;
+
 }
 
 - (void)updateBackgroundConstraints
 {
-	if (![self isFullScreen] && self.status.length == 0) {
+	if (self.status.length == 0) {
 		self.circleProgressViewTopToSuperViewConstraint.constant = KVNContentViewWithoutStatusInset;
 		self.statusLabelBottomToSuperViewConstraint.constant = KVNContentViewWithoutStatusInset;
 		
@@ -959,8 +940,7 @@ static KVNProgressConfiguration *configuration;
 		[self showProgress:progress
 					status:self.status
 					 style:self.style
-			backgroundType:self.backgroundType
-				fullScreen:self.fullScreen
+                  circular:self.circular
 					  view:self.superview
 				completion:nil];
 		
@@ -1274,7 +1254,7 @@ static KVNProgressConfiguration *configuration;
 // Used to block interaction for all views behind
 - (UIView *)hitTest:(CGPoint)point withEvent:(UIEvent *)event
 {
-	if (self.configuration.allowUserInteraction && ![self isFullScreen]) {
+	if (self.configuration.allowUserInteraction) {
 		return nil;
 	} else {
 		return (CGRectContainsPoint(self.frame, point)) ? self : nil;

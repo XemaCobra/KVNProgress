@@ -13,13 +13,6 @@
 
 typedef void (^KVNTapBlock)(KVNProgress *);
 
-typedef NS_ENUM(NSUInteger, KVNProgressBackgroundType) {
-	/** Don't allow user interactions and show a blurred background. Default value. */
-	KVNProgressBackgroundTypeBlurred,
-	/** Don't allow user interactions and show a solid color background. */
-	KVNProgressBackgroundTypeSolid,
-};
-
 /** Configuration of UI for a <code>KVNProgress</code> instance. */
 @interface KVNProgressConfiguration : NSObject <NSCopying>
 
@@ -29,10 +22,8 @@ typedef NS_ENUM(NSUInteger, KVNProgressBackgroundType) {
 @property (nonatomic) UIColor *backgroundFillColor;
 /** Tint color of the background view. Used to tint blurred background only when backgroundType is KVNProgressBackgroundTypeBlurred. */
 @property (nonatomic) UIColor *backgroundTintColor;
-/** Tells which background type the HUD will use. */
-@property (nonatomic) KVNProgressBackgroundType backgroundType;
-/** Tells wether the HUD is full screen or not. */
-@property (nonatomic, getter = isFullScreen) BOOL fullScreen;
+/** Tells wether the HUD is circular or not. */
+@property (nonatomic, getter = isCircular) BOOL circular;
 
 #pragma mark - Circle
 

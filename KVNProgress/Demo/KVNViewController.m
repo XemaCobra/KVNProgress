@@ -12,7 +12,7 @@
 
 @interface KVNViewController ()
 
-@property (weak, nonatomic) IBOutlet UISwitch *fullscreenSwitch;
+@property (weak, nonatomic) IBOutlet UISwitch *circularSwitch;
 
 @property (nonatomic) KVNProgressConfiguration *basicConfiguration;
 @property (nonatomic) KVNProgressConfiguration *customConfiguration;
@@ -82,14 +82,10 @@
 
 - (IBAction)showWithSolidBackground
 {
-	self.basicConfiguration.backgroundType = KVNProgressBackgroundTypeSolid;
-	
 	[KVNProgress showWithStatus:@"Loading..."];
 	
 	dispatch_main_after(3.0f, ^{
 		[KVNProgress dismiss];
-		
-		self.basicConfiguration.backgroundType = KVNProgressBackgroundTypeBlurred;
 	});
 }
 
@@ -104,8 +100,7 @@
 
 - (IBAction)showProgress
 {
-	[KVNProgress showProgress:0.0f
-					   status:@"Loading with progress..."];
+	[KVNProgress showProgress:0.0f];
 	
 	[self updateProgress];
 	
@@ -144,10 +139,10 @@
 
 #pragma mark - Actions
 
-- (IBAction)fullScreenSwitchDidChange
+- (IBAction)circularSwitchDidChange
 {
-	self.basicConfiguration.fullScreen = [self.fullscreenSwitch isOn];
-	self.customConfiguration.fullScreen = [self.fullscreenSwitch isOn];
+    self.basicConfiguration.circular = [self.circularSwitch isOn];
+    self.customConfiguration.circular = [self.circularSwitch isOn];
 }
 
 #pragma mark - Helpers
